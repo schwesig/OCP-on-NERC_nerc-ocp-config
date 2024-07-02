@@ -5,3 +5,4 @@ resources:
   - nerc-ocp-prod
   - nerc-ocp-test
   - nerc-ocp-obs
+  - hypershift1
