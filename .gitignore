@@ -1,2 +1,8 @@
 **/overlays/*-local/
 bootstrap/
+claude.md
+claude/
+.aider.chat.history.md
+.aider.input.history
+.aider.tags.cache.v3/cache.db
+.aider.*
