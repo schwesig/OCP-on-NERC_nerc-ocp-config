@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metering-openmeter
+  namespace: metering-thor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metering-openmeter
+  template:
+    metadata:
+      labels:
+        app: metering-openmeter
+    spec:
+      containers:
+      - name: openmeter
+        image: ghcr.io/openmeterio/openmeter:latest
+        args:
+          - --config
+          - /etc/openmeter/config.yaml
+        env:
+        - name: KAFKA_SASL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metering-openmeter
+              key: password
+        - name: CLICKHOUSE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: clickhouse-billing-credentials
+              key: password
+        ports:
+        - name: api
+          containerPort: 8080
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /etc/openmeter
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: openmeter-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metering-openmeter
+  namespace: metering-thor
+spec:
+  selector:
+    app: metering-openmeter
+  ports:
+  - name: api
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
