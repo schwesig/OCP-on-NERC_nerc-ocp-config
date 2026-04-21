@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openmeter-config
+  namespace: metering-thor
+data:
+  config.yaml: |
+    address: 0.0.0.0:8080
+
+    ingest:
+      kafka:
+        brokers:
+          - metering-kafka-bootstrap.metering-thor.svc:9092
+        securityProtocol: SASL_PLAINTEXT
+        saslMechanisms: SCRAM-SHA-512
+        saslUsername: metering-openmeter
+        # saslPassword injected via KAFKA_SASL_PASSWORD env var
+        topics:
+          - billing-events
+        consumerGroupId: metering-openmeter
+
+    sink:
+      clickhouse:
+        address: chi-metering-metering-0-0.metering-thor.svc:9000
+        database: billing
+        username: default
+        # password injected via CLICKHOUSE_PASSWORD env var
+
+    meters:
+      - slug: pod-running
+        description: "Pod running time (START_RUNNING / STOP pairs)"
+        eventType: billing-event
+        valueProperty: "$.duration_seconds"
+        groupBy:
+          nerc_tenant: "$.nerc_tenant"
+          namespace: "$.namespace"
+          pod_name: "$.pod_name"
+          resource_type: "$.resource_type"
+        aggregation: SUM
+        windowSize: HOUR
+
+      - slug: storage
+        description: "PVC attached time (START_STORAGE / STOP pairs)"
+        eventType: billing-event
+        valueProperty: "$.duration_seconds"
+        groupBy:
+          nerc_tenant: "$.nerc_tenant"
+          namespace: "$.namespace"
+          pod_name: "$.pod_name"
+          resource_type: "$.resource_type"
+        aggregation: SUM
+        windowSize: HOUR
+
+      - slug: pod-error
+        description: "Pod error/OOM events (STOP_ERROR)"
+        eventType: billing-event
+        valueProperty: "$.duration_seconds"
+        groupBy:
+          nerc_tenant: "$.nerc_tenant"
+          namespace: "$.namespace"
+          pod_name: "$.pod_name"
+        aggregation: COUNT
+        windowSize: HOUR

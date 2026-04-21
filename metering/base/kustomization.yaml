@@ -12,5 +12,6 @@ resources:
 - clickhouse.yaml
 - clickhouse-schema-configmap.yaml
 - clickhouse-schema-job.yaml
+- openmeter-config.yaml
 - stream-processor.yaml
 - reconciler-cronjob.yaml
