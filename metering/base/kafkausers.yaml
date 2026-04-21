@@ -69,3 +69,27 @@ spec:
         name: metering-stream-processor
         patternType: literal
       operations: [Read, Describe]
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaUser
+metadata:
+  name: metering-openmeter
+  namespace: metering-thor
+  labels:
+    strimzi.io/cluster: metering
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+    - resource:
+        type: topic
+        name: billing-events
+        patternType: literal
+      operations: [Read, Describe]
+    - resource:
+        type: group
+        name: metering-openmeter
+        patternType: literal
+      operations: [Read, Describe]
