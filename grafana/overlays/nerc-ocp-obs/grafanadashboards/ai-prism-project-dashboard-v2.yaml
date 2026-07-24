@@ -49,7 +49,7 @@ spec:
             "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
           },
           "type": "table",
-          "title": "Pods with GPU requests",
+          "title": "🟣 🎮 Pods with GPU requests",
           "description": "Every pod that requests GPUs, with phase and start time. Succeeded = finished, holds no GPUs anymore (but still counts in the no-join control numbers).",
           "gridPos": {
             "x": 0,
@@ -151,7 +151,7 @@ spec:
             "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
           },
           "type": "stat",
-          "title": "CPU cores in use (3h window)",
+          "title": "🔵 ⚙️ CPU cores in use (3h window)",
           "description": "Real CPU usage, robust against the sparse Barcelona samples. Near 0 while GPUs are allocated = pods likely idle (e.g. sleep infinity). Tens of cores = real training work.",
           "gridPos": {
             "x": 10,
@@ -163,7 +163,8 @@ spec:
             "defaults": {
               "unit": "none",
               "color": {
-                "mode": "thresholds"
+                "mode": "fixed",
+                "fixedColor": "semi-dark-blue"
               },
               "thresholds": {
                 "mode": "absolute",
@@ -183,7 +184,7 @@ spec:
                 "lastNotNull"
               ]
             },
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "area",
             "textMode": "auto"
           },
@@ -205,7 +206,7 @@ spec:
             "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
           },
           "type": "stat",
-          "title": "GPUs held by Running pods",
+          "title": "🟣 🎮 GPUs held by Running pods",
           "description": "GPU requests of pods that are actually Running (2h join window). This is the number that blocks hardware.",
           "gridPos": {
             "x": 17,
@@ -217,7 +218,8 @@ spec:
             "defaults": {
               "unit": "none",
               "color": {
-                "mode": "thresholds"
+                "mode": "fixed",
+                "fixedColor": "semi-dark-purple"
               },
               "thresholds": {
                 "mode": "absolute",
@@ -237,7 +239,7 @@ spec:
                 "lastNotNull"
               ]
             },
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "area",
             "textMode": "auto"
           },
@@ -259,7 +261,7 @@ spec:
             "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
           },
           "type": "stat",
-          "title": "Cluster GPU capacity (barcelona)",
+          "title": "🟣 🎮 Cluster GPU capacity (barcelona)",
           "description": "Total GPUs in the Barcelona cluster. If 'requested incl. finished' is higher than this, finished pods are inflating the numbers.",
           "gridPos": {
             "x": 10,
@@ -271,7 +273,8 @@ spec:
             "defaults": {
               "unit": "none",
               "color": {
-                "mode": "thresholds"
+                "mode": "fixed",
+                "fixedColor": "semi-dark-purple"
               },
               "thresholds": {
                 "mode": "absolute",
@@ -291,7 +294,7 @@ spec:
                 "lastNotNull"
               ]
             },
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "area",
             "textMode": "auto"
           },
@@ -313,7 +316,7 @@ spec:
             "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
           },
           "type": "stat",
-          "title": "GPUs requested incl. finished pods [control]",
+          "title": "🟣 🎮 GPUs requested incl. finished pods [control]",
           "description": "Plain sum of GPU requests, no phase join - finished (Succeeded) pods are still counted here. Compare with 'GPUs held by Running pods'.",
           "gridPos": {
             "x": 17,
@@ -325,7 +328,8 @@ spec:
             "defaults": {
               "unit": "none",
               "color": {
-                "mode": "thresholds"
+                "mode": "fixed",
+                "fixedColor": "semi-dark-purple"
               },
               "thresholds": {
                 "mode": "absolute",
@@ -345,7 +349,7 @@ spec:
                 "lastNotNull"
               ]
             },
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "area",
             "textMode": "auto"
           },
@@ -410,7 +414,11 @@ spec:
           },
           "fieldConfig": {
             "defaults": {
-              "unit": "cores"
+              "unit": "cores",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-blue"
+              }
             }
           },
           "gridPos": {
@@ -425,7 +433,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "CPU allocated (requests, cores)",
+          "title": "🔵 ⚙️ CPU allocated (requests, cores)",
           "type": "timeseries"
         },
         {
@@ -435,7 +443,11 @@ spec:
           },
           "fieldConfig": {
             "defaults": {
-              "unit": "short"
+              "unit": "short",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-purple"
+              }
             },
             "overrides": []
           },
@@ -452,7 +464,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "GPU allocated (requests, count)",
+          "title": "🟣 🎮 GPU allocated (requests, count)",
           "type": "timeseries",
           "description": "Counts only Running pods (2h join window for the sparse Barcelona samples) - finished (Succeeded) pods still report requests but hold no GPUs."
         },
@@ -515,7 +527,11 @@ spec:
           },
           "fieldConfig": {
             "defaults": {
-              "unit": "cores"
+              "unit": "cores",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-blue"
+              }
             }
           },
           "gridPos": {
@@ -530,7 +546,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "CPU used (cores)",
+          "title": "🔵 ⚙️ CPU used (cores)",
           "type": "timeseries"
         },
         {
@@ -542,7 +558,11 @@ spec:
             "defaults": {
               "unit": "percentunit",
               "min": 0,
-              "max": 1
+              "max": 1,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-purple"
+              }
             }
           },
           "gridPos": {
@@ -559,7 +579,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "GPU utilization (%) [node-level approx]",
+          "title": "🟣 🎮 GPU utilization (%) [node-level approx]",
           "description": "GPU utilization via DCGM_FI_DEV_GPU_UTIL (0-100%). Node-level approximation - same caveat as GPU hours used panel. Not available for b-* namespaces.",
           "type": "timeseries"
         },
@@ -620,7 +640,11 @@ spec:
           },
           "fieldConfig": {
             "defaults": {
-              "unit": "decgbytes"
+              "unit": "decgbytes",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-purple"
+              }
             }
           },
           "gridPos": {
@@ -640,7 +664,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "GPU memory used (GiB) [node-level approx]",
+          "title": "🟣 🎮 GPU memory used (GiB) [node-level approx]",
           "description": "GPU VRAM usage via DCGM exporter (node-level approximation).\n\nDCGM_FI_DEV_FB_USED is node/GPU-level - if multiple namespaces share a GPU node, each will show the full node VRAM. No pod-level VRAM metric is available from DCGM.\n\n⚠️ Not available for Barcelona projects (b-* namespaces) - the beta-test cluster does not run a DCGM exporter.",
           "type": "timeseries"
         },
@@ -653,61 +677,60 @@ spec:
             "y": 45
           },
           "id": 240,
-          "panels": [
+          "title": "Other Metrics",
+          "type": "row",
+          "panels": []
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps"
+            }
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 46,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
             {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
-              },
-              "fieldConfig": {
-                "defaults": {
-                  "unit": "Bps"
-                }
-              },
-              "gridPos": {
-                "x": 0,
-                "y": 31,
-                "w": 12,
-                "h": 8
-              },
-              "targets": [
-                {
-                  "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"$namespace\"}[5m]) + rate(container_network_transmit_bytes_total{namespace=\"$namespace\"}[5m]))",
-                  "refId": "A"
-                }
-              ],
-              "title": "Network throughput (Rx + Tx)",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
-              },
-              "fieldConfig": {
-                "defaults": {
-                  "unit": "watt"
-                }
-              },
-              "gridPos": {
-                "x": 12,
-                "y": 31,
-                "w": 12,
-                "h": 8
-              },
-              "targets": [
-                {
-                  "expr": "(sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"POD\",container!=\"\"}[5m])) * 15) + ((sum(kube_pod_container_resource_requests{resource=\"nvidia_com_gpu\",namespace=\"$namespace\"}) or vector(0)) * 250)",
-                  "legendFormat": "Estimated power (W)",
-                  "refId": "A"
-                }
-              ],
-              "title": "Estimated power usage (heuristic)",
-              "type": "timeseries"
+              "expr": "sum(rate(container_network_receive_bytes_total{namespace=\"$namespace\"}[5m]) + rate(container_network_transmit_bytes_total{namespace=\"$namespace\"}[5m]))",
+              "refId": "A"
             }
           ],
-          "title": "Other Metrics",
-          "type": "row"
+          "title": "Network throughput (Rx + Tx)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "watt"
+            }
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 46,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "expr": "(sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"POD\",container!=\"\"}[5m])) * 15) + ((sum(kube_pod_container_resource_requests{resource=\"nvidia_com_gpu\",namespace=\"$namespace\"}) or vector(0)) * 250)",
+              "legendFormat": "Estimated power (W)",
+              "refId": "A"
+            }
+          ],
+          "title": "Estimated power usage (heuristic)",
+          "type": "timeseries"
         },
         {
           "collapsed": false,
@@ -715,11 +738,32 @@ spec:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 53
+            "y": 54
           },
           "id": 220,
           "title": "CPU Hours",
           "type": "row"
+        },
+        {
+          "type": "text",
+          "title": "",
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 55
+          },
+          "options": {
+            "mode": "markdown",
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "### Reading the core-hours panels (allocated vs control)\n\nBoth pairs below (CPU core-hours and GPU hours) sum the **requested** resources over the selected period, hour by hour. They differ in which pods they count:\n\n- **allocated (requests)**: joins each pod's requests with its phase and only counts hours where the pod was **Running** (2h lookback, because barcelona sends only ~1 sample per hour).\n- **allocated (no join) [control]**: counts **every pod object that exists**, including Succeeded/Failed pods that were never cleaned up.\n\nA finished pod keeps its resource requests until it is deleted, so the control panel keeps adding its cores/GPUs for every hour the dead pod sits in the cluster. Example: the qwen-fsdp-lr-pilot pods finished, stayed for days as Succeeded, and added ~2000 ghost GPU-hours to the control number before they were deleted.\n\n**How to read the gap:**\n- Numbers close together: clean, everything that was requested was actually running.\n- Control much higher: finished pods are inflating the sum. Fix: delete the finished workload (`oc delete sts/job ... -n <namespace>`).\n- The joined panel can also **undercount** a bit when barcelona misses samples for over 2h (scrape gaps). The true value lies between the two numbers, usually closer to the joined one."
+          },
+          "transparent": false,
+          "id": 250
         },
         {
           "datasource": {
@@ -730,14 +774,18 @@ spec:
             "defaults": {
               "unit": "none",
               "decimals": 1,
-              "displayName": "CPU core-hours used (selected period)"
+              "displayName": "CPU core-hours used (selected period)",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-blue"
+              }
             }
           },
           "gridPos": {
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 62
+            "y": 63
           },
           "id": 203,
           "options": {
@@ -748,7 +796,7 @@ spec:
             },
             "orientation": "auto",
             "textMode": "auto",
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "none"
           },
           "targets": [
@@ -758,7 +806,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "CPU core-hours used (selected period)",
+          "title": "🔵 ⚙️ CPU core-hours used (selected period)",
           "description": "Total CPU core-hours actually consumed over the selected time range.",
           "type": "stat"
         },
@@ -771,14 +819,18 @@ spec:
             "defaults": {
               "unit": "none",
               "decimals": 1,
-              "displayName": "CPU core-hours allocated (selected period)"
+              "displayName": "CPU core-hours allocated (selected period)",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-blue"
+              }
             }
           },
           "gridPos": {
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 62
+            "y": 63
           },
           "id": 201,
           "options": {
@@ -789,7 +841,7 @@ spec:
             },
             "orientation": "auto",
             "textMode": "auto",
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "none"
           },
           "targets": [
@@ -799,7 +851,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "CPU core-hours allocated (requests) [selected period]",
+          "title": "🔵 ⚙️ CPU core-hours allocated (requests) [selected period]",
           "description": "Total allocated CPU core-hours for running pods over the selected time range.",
           "type": "stat"
         },
@@ -812,14 +864,18 @@ spec:
             "defaults": {
               "unit": "none",
               "decimals": 1,
-              "displayName": "CPU core-hours allocated no-join (selected period)"
+              "displayName": "CPU core-hours allocated no-join (selected period)",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-blue"
+              }
             }
           },
           "gridPos": {
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 62
+            "y": 63
           },
           "id": 211,
           "options": {
@@ -830,7 +886,7 @@ spec:
             },
             "orientation": "auto",
             "textMode": "auto",
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "none"
           },
           "targets": [
@@ -840,7 +896,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "CPU core-hours allocated (requests, no join) [control]",
+          "title": "🔵 ⚙️ CPU core-hours allocated (requests, no join) [control]",
           "description": "Control panel: CPU core-hours from requests without phase join. Compare with 'CPU core-hours allocated' above to check for scrape gaps.",
           "type": "stat"
         },
@@ -861,7 +917,7 @@ spec:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 68
+            "y": 69
           },
           "id": 221,
           "title": "GPU Hours",
@@ -876,14 +932,18 @@ spec:
             "defaults": {
               "unit": "none",
               "decimals": 1,
-              "displayName": "GPU hours used (selected period)"
+              "displayName": "GPU hours used (selected period)",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-purple"
+              }
             }
           },
           "gridPos": {
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 69
+            "y": 70
           },
           "id": 204,
           "options": {
@@ -894,7 +954,7 @@ spec:
             },
             "orientation": "auto",
             "textMode": "auto",
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "none"
           },
           "targets": [
@@ -904,7 +964,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "GPU hours used (selected period) [node-level approx]",
+          "title": "🟣 🎮 GPU hours used (selected period) [node-level approx]",
           "description": "GPU-hours used based on DCGM_FI_DEV_GPU_UTIL (0-100%) × allocated GPUs × time. Node-level approximation - same caveat as GPU memory panel. Not available for b-* namespaces.",
           "type": "stat"
         },
@@ -917,14 +977,18 @@ spec:
             "defaults": {
               "unit": "none",
               "decimals": 1,
-              "displayName": "GPU hours allocated (selected period)"
+              "displayName": "GPU hours allocated (selected period)",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-purple"
+              }
             }
           },
           "gridPos": {
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 69
+            "y": 70
           },
           "id": 202,
           "options": {
@@ -935,7 +999,7 @@ spec:
             },
             "orientation": "auto",
             "textMode": "auto",
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "none"
           },
           "targets": [
@@ -945,7 +1009,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "GPU hours allocated (requests) [selected period]",
+          "title": "🟣 🎮 GPU hours allocated (requests) [selected period]",
           "description": "Total allocated GPU-hours for running pods over the selected time range.",
           "type": "stat"
         },
@@ -958,14 +1022,18 @@ spec:
             "defaults": {
               "unit": "none",
               "decimals": 1,
-              "displayName": "GPU hours allocated no-join (selected period)"
+              "displayName": "GPU hours allocated no-join (selected period)",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "semi-dark-purple"
+              }
             }
           },
           "gridPos": {
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 69
+            "y": 70
           },
           "id": 212,
           "options": {
@@ -976,7 +1044,7 @@ spec:
             },
             "orientation": "auto",
             "textMode": "auto",
-            "colorMode": "value",
+            "colorMode": "background",
             "graphMode": "none"
           },
           "targets": [
@@ -986,7 +1054,7 @@ spec:
               "refId": "A"
             }
           ],
-          "title": "GPU hours allocated (requests, no join) [control]",
+          "title": "🟣 🎮 GPU hours allocated (requests, no join) [control]",
           "description": "Control panel: GPU hours from requests without phase join. Compare with 'GPU hours allocated' above to check for scrape gaps.",
           "type": "stat"
         }
