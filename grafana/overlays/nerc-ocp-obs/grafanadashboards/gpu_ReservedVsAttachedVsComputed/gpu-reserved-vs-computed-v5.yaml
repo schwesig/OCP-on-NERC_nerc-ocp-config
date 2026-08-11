@@ -1,0 +1,648 @@
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: gpu-reserved-vs-computed-v5
+  namespace: grafana
+  labels:
+    app: grafana
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folder: GPU Accounting
+  json: |-
+    {
+      "panels": [
+        {
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "options": {
+            "content": "# NVIDIA GPUs only (Filter nvidia.com and DCGM metric)\n\nreservation vs. real useage, per cluster and namespace (see variable and panel info icons for details)",
+            "mode": "markdown"
+          },
+          "title": "",
+          "transparent": true,
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "description": "**Source: `kube_pod_resource_request{resource=~\"nvidia.com/.+\"}`**: this is the Kubernetes sheduler view: GPU *requests* of scheduled pods, i.e. reservation time. This is what gets billed on the invoice (SU hours), no matter if the GPU actualy did any work or not.\n\n`sum(sum_over_time(...[$__range])) * 300/3600`: total for the selected time range, evaluated at range end.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "blue",
+                "mode": "fixed"
+              },
+              "decimals": 1,
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 0,
+            "y": 2
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "value_and_name"
+          },
+          "targets": [
+            {
+              "expr": "sum(sum_over_time(kube_pod_resource_request{cluster=~\"$cluster\", namespace=~\"$namespace\", resource=~\"nvidia\\\\.com/.+\", node!=\"\"}[$__range])) * 300 / 3600",
+              "instant": true,
+              "legendFormat": "reserved GPU-h (requests)",
+              "refId": "A"
+            }
+          ],
+          "title": "reserved GPU-h (requests)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "description": "**Source: `DCGM_FI_DEV_FB_USED{exported_pod!=\"\"}`**: NVIDIA DCGM telemetrie: counts 300s samples where a GPU was realy *attached* to a pod (device plugin attribution). Hanging workers that never start up show up under 'reserved' but NOT here.\n\n`sum(count_over_time(...[$__range])) * 300/3600`: total for the selected time range.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "decimals": 1,
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 8,
+            "y": 2
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "value_and_name"
+          },
+          "targets": [
+            {
+              "expr": "sum(count_over_time(DCGM_FI_DEV_FB_USED{cluster=~\"$cluster\", exported_namespace=~\"$namespace\",exported_pod!=\"\"}[$__range])) * 300 / 3600",
+              "instant": true,
+              "legendFormat": "attached GPU-h (DCGM)",
+              "refId": "A"
+            }
+          ],
+          "title": "attached GPU-h (DCGM)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "description": "**Source: `DCGM_FI_DEV_GPU_UTIL{exported_pod!=\"\"}`**: NVIDIA DCGM telemetry: utilization weighted GPU hours (100% for 1h = 1.0 GPU-h). This is the *real compute* that actualy got perfomed.\n\n`sum(sum_over_time(...[$__range])) * 300/3600/100`: total for the selected time range.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "yellow",
+                "mode": "fixed"
+              },
+              "decimals": 1,
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 16,
+            "y": 2
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "textMode": "value_and_name"
+          },
+          "targets": [
+            {
+              "expr": "sum(sum_over_time(DCGM_FI_DEV_GPU_UTIL{cluster=~\"$cluster\", exported_namespace=~\"$namespace\",exported_pod!=\"\"}[$__range])) * 300 / 3600 / 100",
+              "instant": true,
+              "legendFormat": "computed GPU-h (DCGM busy)",
+              "refId": "A"
+            }
+          ],
+          "title": "computed GPU-h (DCGM busy)",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "description": "Same three sources like the tiles above, but as runing total: each query returns the GPU hours per `$__interval` step (steps tile the range, no overlap), and a cumulative sum transformation adds them up from the start of the selected range.\n\nReading rule: value at time t = total from range start until t. The right edge matches the stat tiles exactely. Min step is 5m (one 300s hub sample per step at most).\n\nEmpty steps (no GPU pods at all) are forced to 0 via `or vector(0)`, otherwise PromQL returns nothing there and the line gets gaps.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisLabel": "GPU hours",
+                "axisWidth": 70,
+                "fillOpacity": 8,
+                "lineWidth": 2
+              },
+              "decimals": 0,
+              "unit": "none"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "1. reserved (requests)"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "2. attached (DCGM allocation)"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "green",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "3. computed (DCGM busy)"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "yellow",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "1. reserved (requests)"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": true,
+                      "tooltip": true,
+                      "viz": true
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "1. reserved (requests) \u2211"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "2. attached (DCGM allocation)"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": true,
+                      "tooltip": true,
+                      "viz": true
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "2. attached (DCGM allocation) \u2211"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "green",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "3. computed (DCGM busy)"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": true,
+                      "tooltip": true,
+                      "viz": true
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "3. computed (DCGM busy) \u2211"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "yellow",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 7
+          },
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "(sum(sum_over_time(kube_pod_resource_request{cluster=~\"$cluster\", namespace=~\"$namespace\", resource=~\"nvidia\\\\.com/.+\", node!=\"\"}[$__interval])) or vector(0)) * 300 / 3600",
+              "interval": "5m",
+              "legendFormat": "1. reserved (requests)",
+              "refId": "A"
+            },
+            {
+              "expr": "(sum(count_over_time(DCGM_FI_DEV_FB_USED{cluster=~\"$cluster\", exported_namespace=~\"$namespace\",exported_pod!=\"\"}[$__interval])) or vector(0)) * 300 / 3600",
+              "interval": "5m",
+              "legendFormat": "2. attached (DCGM allocation)",
+              "refId": "B"
+            },
+            {
+              "expr": "(sum(sum_over_time(DCGM_FI_DEV_GPU_UTIL{cluster=~\"$cluster\", exported_namespace=~\"$namespace\",exported_pod!=\"\"}[$__interval])) or vector(0)) * 300 / 3600 / 100",
+              "interval": "5m",
+              "legendFormat": "3. computed (DCGM busy)",
+              "refId": "C"
+            }
+          ],
+          "title": "GPU hours, cumulative since range start: invoice view (requests) vs. DCGM",
+          "transformations": [
+            {
+              "id": "calculateField",
+              "options": {
+                "alias": "1. reserved (requests) \u2211",
+                "cumulative": {
+                  "field": "1. reserved (requests)",
+                  "reducer": "sum"
+                },
+                "mode": "cumulativeFunctions",
+                "replaceFields": false
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "alias": "2. attached (DCGM allocation) \u2211",
+                "cumulative": {
+                  "field": "2. attached (DCGM allocation)",
+                  "reducer": "sum"
+                },
+                "mode": "cumulativeFunctions",
+                "replaceFields": false
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "alias": "3. computed (DCGM busy) \u2211",
+                "cumulative": {
+                  "field": "3. computed (DCGM busy)",
+                  "reducer": "sum"
+                },
+                "mode": "cumulativeFunctions",
+                "replaceFields": false
+              }
+            }
+          ],
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "description": "Fires per pod when **all** of this holds over the last $idle_window:\n\n- `kube_pod_resource_request{resource=~\"nvidia.com/.+\"} > 0` at every 5 min step (`min_over_time` + `count_over_time >= 95% of window steps` = held *continously*, adapts to the idle window selection)\n- `unless` avg `DCGM_FI_DEV_GPU_UTIL >= $util_threshold%` (no measurable compute, or no DCGM attribution at all, which is how hanging DDP workers look like)\n\nWhy `unless` and not a join on low utilization: `unless` only removes pods that can PROVE usage (avg at or above the threshold). A pod with no DCGM series at all can never proove anything, so it stays a hit. A join on `util < threshold` would silently drop exactly these pods, because there is no series to join on; and those are the worst offenders (workers that hang before they ever touch the GPU).\n\nValue = number of GPUs held. Same logic as alert `GPURequestedButIdle` in gpu-idle-alert-rule.yaml.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisLabel": "GPUs held",
+                "axisWidth": 70,
+                "drawStyle": "line",
+                "fillOpacity": 35,
+                "lineWidth": 3,
+                "spanNulls": false
+              },
+              "min": 0,
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 21
+          },
+          "options": {
+            "legend": {
+              "calcs": [
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "(\n  min_over_time(\n    (sum by (namespace, pod) (\n      kube_pod_resource_request{cluster=~\"$cluster\", namespace=~\"$namespace\", resource=~\"nvidia\\\\.com/.+\", node!=\"\"}\n    ))[$idle_window:5m]\n  ) > 0\n)\nand\n(\n  count_over_time(\n    (sum by (namespace, pod) (\n      kube_pod_resource_request{cluster=~\"$cluster\", namespace=~\"$namespace\", resource=~\"nvidia\\\\.com/.+\", node!=\"\"}\n    ))[$idle_window:5m]\n  ) >= on() group_left() (0.95 * count_over_time(vector(1)[$idle_window:5m]))\n)\nunless on (namespace, pod)\n(\n  sum by (namespace, pod) (\n    label_replace(label_replace(\n      avg_over_time(DCGM_FI_DEV_GPU_UTIL{cluster=~\"$cluster\", exported_namespace=~\"$namespace\", exported_pod!=\"\"}[$idle_window]),\n      \"namespace\", \"$1\", \"exported_namespace\", \"(.+)\"), \"pod\", \"$1\", \"exported_pod\", \"(.+)\")\n  ) >= $util_threshold\n)",
+              "legendFormat": "{{namespace}}/{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Idle detector: pods holding GPU(s) for \u2265$idle_window with avg utilization < $util_threshold% (value = number of GPUs)",
+          "type": "timeseries"
+        },
+        {
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 33
+          },
+          "options": {
+            "content": "| # | series | formula | measures |\n|---|---|---|---|\n| 1 | reserved | `sum(sum_over_time(kube_pod_resource_request{resource=~\"nvidia.com/.+\"}[$__range])) * 300/3600` | GPU **requests** x time; the billing basis (SU hours) |\n| 2 | attached | `sum(count_over_time(DCGM_FI_DEV_FB_USED{exported_pod!=\"\"}[$__range])) * 300/3600` | GPU physically **attached** to a pod (DCGM presence) |\n| 3 | computed | `sum(sum_over_time(DCGM_FI_DEV_GPU_UTIL{exported_pod!=\"\"}[$__range])) * 300/3600/100` | utilization weighted **real compute** hours |\n\n`kube_pod_resource_request` = scheduler view (namespace/pod labels) \u00b7 `DCGM_*` = GPU telemetry (exported_namespace/exported_pod labels, allocation based) \u00b7 300s = ACM hub sample interval \u00b7 hover the info icon on each panel for more detailes",
+            "mode": "markdown"
+          },
+          "title": "Methodology",
+          "type": "text"
+        }
+      ],
+      "refresh": "1h",
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "selected": true,
+              "text": [
+                "nerc-ocp-test"
+              ],
+              "value": [
+                "nerc-ocp-test"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+            },
+            "description": "Clusters that requested NVIDIA GPUs inside the selected time range. The namespace list below follows this selection. Same retention limits apply as descriped at the namespace variable.",
+            "includeAll": true,
+            "label": "cluster",
+            "multi": true,
+            "name": "cluster",
+            "query": {
+              "query": "label_values(kube_pod_resource_request{resource=~\"nvidia\\\\.com/.+\"}, cluster)",
+              "refId": "var-cluster"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ],
+              "selected": true
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+            },
+            "description": "Which namespaces show up here: only namespaces that requested GPUs (kube_pod_resource_request, resource nvidia.com/*) inside the selected time range. CPU only namespaces are hidden on purpose; the dashboard would show nothing for them, they would only clutter the list. Example: gavin-test appears because it also had GPU pods; a namespace with only CPU pods (like a lone gs-test-0) would not appear.\n\nThe list follows the time range: with \"Previous month\" you only see namespaces that held GPU requests in that month. Small catch: an already selected namespace stays selected when you change the range, then panels show empty untill you reselect from the list.\n\nHow far back this works (hub retention): raw 300s samples are kept 90 days, 5min downsampled data 360 days, 1h downsampling forever but too coarse for these queries. So roughly 12 months back everything works; older ranges simply return nothing because the data is gone. After day 90 the numbers can shift a tiny bit, since the 5min downsampling answers insted of raw data.",
+            "includeAll": true,
+            "label": "namespace",
+            "multi": true,
+            "name": "namespace",
+            "query": {
+              "query": "label_values(kube_pod_resource_request{cluster=~\"$cluster\", resource=~\"nvidia\\\\.com/.+\"}, namespace)",
+              "refId": "var-ns"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": "4h",
+              "value": "4h"
+            },
+            "description": "Minimum time a pod must hold GPU request(s) continuously without utilization before it shows up in the idle detector panel. Short windows (5m, 10m) also catch normal startup phases of legit jobs; 4h and up means something is realy stuck. Continuity check adapts automaticly (95% of the 5min steps in the window must show the request).",
+            "includeAll": false,
+            "label": "idle window",
+            "multi": false,
+            "name": "idle_window",
+            "options": [
+              {
+                "selected": false,
+                "text": "5m",
+                "value": "5m"
+              },
+              {
+                "selected": false,
+                "text": "10m",
+                "value": "10m"
+              },
+              {
+                "selected": false,
+                "text": "30m",
+                "value": "30m"
+              },
+              {
+                "selected": false,
+                "text": "1h",
+                "value": "1h"
+              },
+              {
+                "selected": false,
+                "text": "2h",
+                "value": "2h"
+              },
+              {
+                "selected": true,
+                "text": "4h",
+                "value": "4h"
+              },
+              {
+                "selected": false,
+                "text": "8h",
+                "value": "8h"
+              },
+              {
+                "selected": false,
+                "text": "12h",
+                "value": "12h"
+              },
+              {
+                "selected": false,
+                "text": "24h",
+                "value": "24h"
+              }
+            ],
+            "query": "5m,10m,30m,1h,2h,4h,8h,12h,24h",
+            "type": "custom"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": "1",
+              "value": "1"
+            },
+            "description": "Average DCGM GPU utilization (percent) over the idle window that counts as \"realy used\". Pods at or above this average are excluded from the idle detector. Pods below it, or with no DCGM data at all (typical for hanging workers), show up as idle. Default 1%.",
+            "includeAll": false,
+            "label": "util threshold %",
+            "multi": false,
+            "name": "util_threshold",
+            "options": [
+              {
+                "selected": false,
+                "text": "0.1",
+                "value": "0.1"
+              },
+              {
+                "selected": false,
+                "text": "0.5",
+                "value": "0.5"
+              },
+              {
+                "selected": true,
+                "text": "1",
+                "value": "1"
+              },
+              {
+                "selected": false,
+                "text": "2",
+                "value": "2"
+              },
+              {
+                "selected": false,
+                "text": "5",
+                "value": "5"
+              },
+              {
+                "selected": false,
+                "text": "10",
+                "value": "10"
+              },
+              {
+                "selected": false,
+                "text": "25",
+                "value": "25"
+              },
+              {
+                "selected": false,
+                "text": "50",
+                "value": "50"
+              }
+            ],
+            "query": "0.1,0.5,1,2,5,10,25,50",
+            "type": "custom"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-1M/M",
+        "to": "now-1M/M"
+      },
+      "timezone": "utc",
+      "title": "NVIDIA GPU: reserved vs. attached vs. computed (v5)",
+      "uid": "gpu-trio-v5"
+    }

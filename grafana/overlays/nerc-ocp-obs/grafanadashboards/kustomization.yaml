@@ -12,3 +12,6 @@ resources:
   - nairr-pilot-project-dashboard.yaml
   - ai-prism-project-dashboard.yaml
   - ai-prism-project-dashboard-v2.yaml
+  - gpu_ReservedVsAttachedVsComputed/gpu-reserved-vs-computed-v1.yaml
+  - gpu_ReservedVsAttachedVsComputed/gpu-reserved-vs-computed-v2.yaml
+  - gpu_ReservedVsAttachedVsComputed/gpu-reserved-vs-computed-v5.yaml

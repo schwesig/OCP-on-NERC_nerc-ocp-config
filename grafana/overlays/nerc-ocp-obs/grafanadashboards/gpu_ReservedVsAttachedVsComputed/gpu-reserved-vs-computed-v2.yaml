@@ -1,0 +1,457 @@
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: gpu-reserved-vs-computed-v2
+  namespace: grafana
+  labels:
+    app: grafana
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  folder: GPU Accounting
+  json: |-
+    {
+      "panels": [
+        {
+          "type": "stat",
+          "title": "reserved GPU-h (requests)",
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 8,
+            "h": 5
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 1,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "blue"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          },
+          "description": "**Source: `kube_pod_resource_request{resource=~\"nvidia.com/.+\"}`**: this is the Kubernetes sheduler view: GPU *requests* of scheduled pods, i.e. reservation time. This is what gets billed on the invoice (SU hours), no matter if the GPU actualy did any work or not.\n\n`sum(sum_over_time(...[$__range])) * 300/3600`: total for the selected time range, evaluated at range end.",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(sum_over_time(kube_pod_resource_request{cluster=\"nerc-ocp-test\", namespace=\"gavin-test\", resource=~\"nvidia\\\\.com/.+\", node!=\"\"}[$__range])) * 300 / 3600",
+              "instant": true,
+              "legendFormat": "reserved GPU-h (requests)"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "attached GPU-h (DCGM)",
+          "gridPos": {
+            "x": 8,
+            "y": 0,
+            "w": 8,
+            "h": 5
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 1,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "green"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          },
+          "description": "**Source: `DCGM_FI_DEV_FB_USED{exported_pod!=\"\"}`**: NVIDIA DCGM telemetrie: counts 300s samples where a GPU was realy *attached* to a pod (device plugin attribution). Hanging workers that never start up show up under 'reserved' but NOT here.\n\n`sum(count_over_time(...[$__range])) * 300/3600`: total for the selected time range.",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(count_over_time(DCGM_FI_DEV_FB_USED{exported_namespace=\"gavin-test\",exported_pod!=\"\"}[$__range])) * 300 / 3600",
+              "instant": true,
+              "legendFormat": "attached GPU-h (DCGM)"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "computed GPU-h (DCGM busy)",
+          "gridPos": {
+            "x": 16,
+            "y": 0,
+            "w": 8,
+            "h": 5
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 1,
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "yellow"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "value_and_name"
+          },
+          "description": "**Source: `DCGM_FI_DEV_GPU_UTIL{exported_pod!=\"\"}`**: NVIDIA DCGM telemetry: utilization weighted GPU hours (100% for 1h = 1.0 GPU-h). This is the *real compute* that actualy got perfomed.\n\n`sum(sum_over_time(...[$__range])) * 300/3600/100`: total for the selected time range.",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(sum_over_time(DCGM_FI_DEV_GPU_UTIL{exported_namespace=\"gavin-test\",exported_pod!=\"\"}[$__range])) * 300 / 3600 / 100",
+              "instant": true,
+              "legendFormat": "computed GPU-h (DCGM busy)"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisLabel": "GPU hours",
+                "axisWidth": 70,
+                "fillOpacity": 8,
+                "lineWidth": 2
+              },
+              "decimals": 0,
+              "unit": "none"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "1. reserved (requests)"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "2. attached (DCGM allocation)"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "green",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "3. computed (DCGM busy)"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "yellow",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "1. reserved (requests)"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "viz": true,
+                      "legend": true,
+                      "tooltip": true
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "1. reserved (requests) \u2211"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "blue"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "2. attached (DCGM allocation)"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "viz": true,
+                      "legend": true,
+                      "tooltip": true
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "2. attached (DCGM allocation) \u2211"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "3. computed (DCGM busy)"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "viz": true,
+                      "legend": true,
+                      "tooltip": true
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "3. computed (DCGM busy) \u2211"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "yellow"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 5
+          },
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "(sum(sum_over_time(kube_pod_resource_request{cluster=\"nerc-ocp-test\", namespace=\"gavin-test\", resource=~\"nvidia\\\\.com/.+\", node!=\"\"}[$__interval])) or vector(0)) * 300 / 3600",
+              "legendFormat": "1. reserved (requests)",
+              "refId": "A",
+              "interval": "5m"
+            },
+            {
+              "expr": "(sum(count_over_time(DCGM_FI_DEV_FB_USED{exported_namespace=\"gavin-test\",exported_pod!=\"\"}[$__interval])) or vector(0)) * 300 / 3600",
+              "legendFormat": "2. attached (DCGM allocation)",
+              "refId": "B",
+              "interval": "5m"
+            },
+            {
+              "expr": "(sum(sum_over_time(DCGM_FI_DEV_GPU_UTIL{exported_namespace=\"gavin-test\",exported_pod!=\"\"}[$__interval])) or vector(0)) * 300 / 3600 / 100",
+              "legendFormat": "3. computed (DCGM busy)",
+              "refId": "C",
+              "interval": "5m"
+            }
+          ],
+          "title": "GPU hours, cumulative since range start: invoice view (requests) vs. DCGM",
+          "type": "timeseries",
+          "description": "Same three sources like the tiles above, but as runing total: each query returns the GPU hours per `$__interval` step (steps tile the range, no overlap), and a cumulative sum transformation adds them up from the start of the selected range.\n\nReading rule: value at time t = total from range start until t. The right edge matches the stat tiles exactely. Min step is 5m (one 300s hub sample per step at most).\n\nEmpty steps (no GPU pods at all) are forced to 0 via `or vector(0)`, otherwise PromQL returns nothing there and the line gets gaps.",
+          "transformations": [
+            {
+              "id": "calculateField",
+              "options": {
+                "mode": "cumulativeFunctions",
+                "cumulative": {
+                  "field": "1. reserved (requests)",
+                  "reducer": "sum"
+                },
+                "alias": "1. reserved (requests) \u2211",
+                "replaceFields": false
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "mode": "cumulativeFunctions",
+                "cumulative": {
+                  "field": "2. attached (DCGM allocation)",
+                  "reducer": "sum"
+                },
+                "alias": "2. attached (DCGM allocation) \u2211",
+                "replaceFields": false
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "mode": "cumulativeFunctions",
+                "cumulative": {
+                  "field": "3. computed (DCGM busy)",
+                  "reducer": "sum"
+                },
+                "alias": "3. computed (DCGM busy) \u2211",
+                "replaceFields": false
+              }
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "a0fa9d88-8932-41f7-af80-6f678d4fb1e7"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "axisLabel": "GPUs held",
+                "axisWidth": 70,
+                "drawStyle": "line",
+                "fillOpacity": 35,
+                "lineWidth": 3,
+                "spanNulls": false
+              },
+              "min": 0,
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 19
+          },
+          "options": {
+            "legend": {
+              "calcs": [
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "expr": "(\n  min_over_time(\n    (sum by (pod) (\n      kube_pod_resource_request{cluster=\"nerc-ocp-test\", namespace=\"gavin-test\", resource=~\"nvidia\\\\.com/.+\", node!=\"\"}\n    ))[4h:5m]\n  ) > 0\n)\nand\n(\n  count_over_time(\n    (sum by (pod) (\n      kube_pod_resource_request{cluster=\"nerc-ocp-test\", namespace=\"gavin-test\", resource=~\"nvidia\\\\.com/.+\", node!=\"\"}\n    ))[4h:5m]\n  ) >= 46\n)\nunless on (pod)\n(\n  sum by (pod) (\n    label_replace(\n      avg_over_time(DCGM_FI_DEV_GPU_UTIL{cluster=\"nerc-ocp-test\", exported_namespace=\"gavin-test\", exported_pod!=\"\"}[4h]),\n      \"pod\", \"$1\", \"exported_pod\", \"(.+)\")\n  ) >= 1\n)",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Idle detector: pods holding GPU(s) for \u22654h with no utilization (value = number of GPUs)",
+          "type": "timeseries",
+          "description": "Fires per pod when **all** of this holds over the last 4h:\n\n- `kube_pod_resource_request{resource=~\"nvidia.com/.+\"} > 0` at every 5 min step (`min_over_time` + `count_over_time >= 46/48` = held *continously*)\n- `unless` avg `DCGM_FI_DEV_GPU_UTIL >= 1%` (no measureable compute, or no DCGM attribution at all, which is how hanging DDP workers look like)\n\nValue = number of GPUs held. Same logic as alert `GPURequestedButIdle` in gpu-idle-alert-rule.yaml."
+        },
+        {
+          "type": "text",
+          "title": "Methodology",
+          "gridPos": {
+            "x": 0,
+            "y": 31,
+            "w": 24,
+            "h": 7
+          },
+          "options": {
+            "mode": "markdown",
+            "content": "| # | series | formula | measures |\n|---|---|---|---|\n| 1 | reserved | `sum(sum_over_time(kube_pod_resource_request{resource=~\"nvidia.com/.+\"}[$__range])) * 300/3600` | GPU **requests** x time; the billing basis (SU hours) |\n| 2 | attached | `sum(count_over_time(DCGM_FI_DEV_FB_USED{exported_pod!=\"\"}[$__range])) * 300/3600` | GPU physically **attached** to a pod (DCGM presence) |\n| 3 | computed | `sum(sum_over_time(DCGM_FI_DEV_GPU_UTIL{exported_pod!=\"\"}[$__range])) * 300/3600/100` | utilization weighted **real compute** hours |\n\n`kube_pod_resource_request` = scheduler view (namespace/pod labels) \u00b7 `DCGM_*` = GPU telemetry (exported_namespace/exported_pod labels, allocation based) \u00b7 300s = ACM hub sample interval \u00b7 hover the info icon on each panel for more detailes"
+          }
+        }
+      ],
+      "time": {
+        "from": "now-40d",
+        "to": "now"
+      },
+      "timezone": "utc",
+      "title": "gavin-test GPU: reserved vs. attached vs. computed (v2)",
+      "uid": "gavin-gpu-trio-v2"
+    }
