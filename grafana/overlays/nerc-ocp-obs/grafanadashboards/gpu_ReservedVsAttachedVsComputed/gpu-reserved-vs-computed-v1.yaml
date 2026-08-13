@@ -47,7 +47,7 @@ spec:
             "graphMode": "none",
             "textMode": "value_and_name"
           },
-          "description": "**Source: `kube_pod_resource_request{resource=~\"nvidia.com/.+\"}`**: this is the Kubernetes sheduler view: GPU *requests* of scheduled pods, i.e. reservation time. This is what gets billed on the invoice (SU hours), no matter if the GPU actualy did any work or not.\n\n`sum(sum_over_time(...[$__range])) * 300/3600`: total for the selected time range, evaluated at range end.",
+          "description": "**Source: `kube_pod_resource_request{resource=~\"nvidia.com/.+\", node!=\"\"}`**: this is the Kubernetes sheduler view: GPU *requests* of scheduled pods, i.e. reservation time. Only sheduled pods count (node label set, same guard like the billing scripts use). This is what gets billed on the invoice (SU hours), no matter if the GPU actualy did any work or not.\n\n`sum(sum_over_time(...[$__range])) * 300/3600`: total for the selected time range, evaluated at range end.\n\nFor comparison, the billing scripts use: `kube_pod_resource_request{resource=~\"nvidia.com.*\", node!=\"\"} unless on(pod, namespace) kube_pod_status_unschedulable`. The extra unless part changes realy nothing for us: an unschedulable pod never has a node, so node!=\"\" already drops it. As discussed with Naved: rebuilding the guard 1:1 here would be no big deal, but it needs a subquery and that creates MORE deviation from the billing numbers, not less. So we stay with node!=\"\".",
           "targets": [
             {
               "refId": "A",
@@ -247,7 +247,7 @@ spec:
           ],
           "title": "GPU hours, rolling [$__range]: invoice view (requests) vs. DCGM",
           "type": "timeseries",
-          "description": "**Data sources:**\n\n1. **reserved**: `kube_pod_resource_request{resource=~\"nvidia.com/.+\"}`: GPU *requests* of sheduled pods (what the invoice bills), summed as request value x 300s samples.\n2. **attached**: `DCGM_FI_DEV_FB_USED` sample count x 300s: time a GPU was really attached to a pod (DCGM device plugin attribution).\n3. **computed**: `DCGM_FI_DEV_GPU_UTIL` summed x 300s / 100: utilization weighted GPU hours (real compute).\n\nAll three: rolling window = selected time range ($__range), evaluated at each graph point. The gap between 1 and 2/3 = payed but unused reservation.\n\nReading rule: the value at the RIGHT EDGE of the graph = the total for the selected range (same number like the stat tiles)."
+          "description": "**Data sources:**\n\n1. **reserved**: `kube_pod_resource_request{resource=~\"nvidia.com/.+\", node!=\"\"}`: GPU *requests* of sheduled pods (what the invoice bills), summed as request value x 300s samples.\n2. **attached**: `DCGM_FI_DEV_FB_USED` sample count x 300s: time a GPU was really attached to a pod (DCGM device plugin attribution).\n3. **computed**: `DCGM_FI_DEV_GPU_UTIL` summed x 300s / 100: utilization weighted GPU hours (real compute).\n\nAll three: rolling window = selected time range ($__range), evaluated at each graph point. The gap between 1 and 2/3 = payed but unused reservation.\n\nReading rule: the value at the RIGHT EDGE of the graph = the total for the selected range (same number like the stat tiles)."
         },
         {
           "datasource": {
@@ -296,7 +296,7 @@ spec:
           ],
           "title": "Idle detector: pods holding GPU(s) for \u22654h with no utilization (value = number of GPUs)",
           "type": "timeseries",
-          "description": "Fires per pod when **all** of this holds over the last 4h:\n\n- `kube_pod_resource_request{resource=~\"nvidia.com/.+\"} > 0` at every 5 min step (`min_over_time` + `count_over_time >= 46/48` = held *continously*)\n- `unless` avg `DCGM_FI_DEV_GPU_UTIL >= 1%` (no measureable compute, or no DCGM attribution at all, which is how hanging DDP workers look like)\n\nValue = number of GPUs held. Same logic as alert `GPURequestedButIdle` in gpu-idle-alert-rule.yaml."
+          "description": "Fires per pod when **all** of this holds over the last 4h:\n\n- `kube_pod_resource_request{resource=~\"nvidia.com/.+\", node!=\"\"} > 0` at every 5 min step (`min_over_time` + `count_over_time >= 46/48` = held *continously*)\n- `unless` avg `DCGM_FI_DEV_GPU_UTIL >= 1%` (no measureable compute, or no DCGM attribution at all, which is how hanging DDP workers look like)\n\nValue = number of GPUs held. Same logic as alert `GPURequestedButIdle` in gpu-idle-alert-rule.yaml."
         },
         {
           "type": "text",
@@ -309,7 +309,7 @@ spec:
           },
           "options": {
             "mode": "markdown",
-            "content": "| # | series | formula | measures |\n|---|---|---|---|\n| 1 | reserved | `sum(sum_over_time(kube_pod_resource_request{resource=~\"nvidia.com/.+\"}[$__range])) * 300/3600` | GPU **requests** x time; the billing basis (SU hours) |\n| 2 | attached | `sum(count_over_time(DCGM_FI_DEV_FB_USED{exported_pod!=\"\"}[$__range])) * 300/3600` | GPU physically **attached** to a pod (DCGM presence) |\n| 3 | computed | `sum(sum_over_time(DCGM_FI_DEV_GPU_UTIL{exported_pod!=\"\"}[$__range])) * 300/3600/100` | utilization weighted **real compute** hours |\n\n`kube_pod_resource_request` = scheduler view (namespace/pod labels) \u00b7 `DCGM_*` = GPU telemetry (exported_namespace/exported_pod labels, allocation based) \u00b7 300s = ACM hub sample interval \u00b7 hover the info icon on each panel for more detailes"
+            "content": "| # | series | formula | measures |\n|---|---|---|---|\n| 1 | reserved | `sum(sum_over_time(kube_pod_resource_request{resource=~\"nvidia.com/.+\", node!=\"\"}[$__range])) * 300/3600` | GPU **requests** x time; the billing basis (SU hours) |\n| 2 | attached | `sum(count_over_time(DCGM_FI_DEV_FB_USED{exported_pod!=\"\"}[$__range])) * 300/3600` | GPU physically **attached** to a pod (DCGM presence) |\n| 3 | computed | `sum(sum_over_time(DCGM_FI_DEV_GPU_UTIL{exported_pod!=\"\"}[$__range])) * 300/3600/100` | utilization weighted **real compute** hours |\n\n`kube_pod_resource_request` = scheduler view (namespace/pod labels) \u00b7 `DCGM_*` = GPU telemetry (exported_namespace/exported_pod labels, allocation based) \u00b7 300s = ACM hub sample interval \u00b7 hover the info icon on each panel for more detailes \u00b7 billing reference query: `kube_pod_resource_request{resource=~\"nvidia.com.*\", node!=\"\"} unless on(pod, namespace) kube_pod_status_unschedulable` (the unless adds nothing on top, unschedulable pods never habe a node)"
           }
         }
       ],
