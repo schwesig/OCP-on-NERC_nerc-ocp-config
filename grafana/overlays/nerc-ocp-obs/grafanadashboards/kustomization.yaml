@@ -15,3 +15,4 @@ resources:
   - gpu_ReservedVsAttachedVsComputed/gpu-reserved-vs-computed-v1.yaml
   - gpu_ReservedVsAttachedVsComputed/gpu-reserved-vs-computed-v2.yaml
   - gpu_ReservedVsAttachedVsComputed/gpu-reserved-vs-computed-v5.yaml
+  - gpu_ReservedVsAttachedVsComputed/gpu-reserved-vs-computed-v6.yaml
